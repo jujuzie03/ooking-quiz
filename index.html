@@ -1,0 +1,622 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>〇〇王 クイズ</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; max-width: 900px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin: 12px 0; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ccc; background:#fff; }
+    input, select { padding: 10px; border-radius: 10px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row > * { flex: 1 1 180px; }
+    .muted { color: #666; font-size: 12px; }
+    .pill { display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #ddd; border-radius:999px; }
+    .ansBox { padding:8px; border:1px solid #eee; border-radius:10px; margin:8px 0; }
+    .group { border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
+  </style>
+</head>
+<body>
+  <h1>〇〇王 クイズ</h1>
+
+  <div class="card" id="gate">
+    <div class="row">
+      <div>
+        <label>参加者パスワード</label>
+        <input id="pass" placeholder="合言葉" />
+      </div>
+      <div>
+        <label>セット</label>
+        <select id="setId">
+          <option value="A">主役A</option>
+          <option value="B">主役B</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>名前（スプシ記録用）</label>
+      <input id="name" placeholder="ニックネームOK" />
+      <div class="muted">※画面表示は匿名（参加者-XXXX）</div>
+    </div>
+
+    <div style="margin-top:10px;" class="row">
+      <button onclick="start()">参加者として開始</button>
+      <button onclick="openBoard()">匿名ボード</button>
+      <button onclick="openHost()">司会（進行/採点）</button>
+    </div>
+
+    <div class="muted" id="gateStatus"></div>
+  </div>
+
+  <div class="card" id="quiz" style="display:none;">
+    <div class="row" style="align-items:center;">
+      <div class="muted" id="progress"></div>
+      <div style="text-align:right;"><span class="pill" id="anonPill"></span></div>
+    </div>
+
+    <h2 id="qText">...</h2>
+
+    <div id="choiceArea" style="display:none;">
+      <div id="choices"></div>
+    </div>
+
+    <div id="textArea" style="display:none;">
+      <label>回答（自由入力）</label>
+      <input id="textAnswer" placeholder="例：優しいところ" />
+    </div>
+
+    <div style="margin-top:12px;" class="row">
+      <button id="submitBtn" onclick="submitAnswer()">送信</button>
+      <button onclick="openBoard()">匿名ボード</button>
+    </div>
+
+    <div class="muted" id="status"></div>
+  </div>
+
+  <div class="card" id="board" style="display:none;">
+    <div class="row" style="align-items:center;">
+      <h2 style="margin:0;">匿名ボード（Q別）</h2>
+      <div style="text-align:right;">
+        <button onclick="backToGate()">戻る</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Q番号</label>
+        <select id="boardQno"></select>
+        <div class="muted">Qを選ぶとそのQの回答だけ表示</div>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button onclick="refreshBoard()">更新</button>
+      </div>
+    </div>
+
+    <div class="muted" id="boardStatus"></div>
+    <div id="boardList" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card" id="host" style="display:none;">
+    <div class="row" style="align-items:center;">
+      <h2 style="margin:0;">司会：進行（同期） + 採点</h2>
+      <div style="text-align:right;">
+        <button onclick="backToGate()">戻る</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>司会パスワード（host）</label>
+        <input id="hostPass" placeholder="司会だけが知ってる" />
+        <div class="muted">※進行/採点はこれが必要</div>
+      </div>
+      <div>
+        <label>採点するQ番号（自由入力のQ）</label>
+        <input id="hostQno" placeholder="例：2" inputmode="numeric" />
+        <div class="muted">「回答文ごと」に点数→保存→反映</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-style:dashed;">
+      <h3 style="margin:0 0 8px 0;">進行（全員を同じQに揃える）</h3>
+      <div class="row">
+        <button onclick="hostStart()">開始（Q1開放）</button>
+        <button onclick="hostClose()">締切（回答停止）</button>
+        <button onclick="hostOpen()">再開（回答OK）</button>
+        <button onclick="hostPrev()">前へ</button>
+        <button onclick="hostNext()">次へ（開放）</button>
+        <button onclick="hostReset()">リセット</button>
+      </div>
+      <div class="muted" id="hostStateText"></div>
+    </div>
+
+    <div class="card" style="border-style:dashed;">
+      <h3 style="margin:0 0 8px 0;">自由入力の採点（回答文ごと）</h3>
+      <div class="row">
+        <button onclick="hostLoad()">回答を読み込む</button>
+        <button onclick="hostSaveScores()">点数を保存</button>
+        <button onclick="hostApplyScores()">responsesへ反映</button>
+      </div>
+      <div class="muted" id="hostStatus"></div>
+      <div id="hostGroups" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+<script>
+  // ====== 設定 ======
+  const API = "https://script.google.com/macros/s/AKfycbztDU-CICxOY0mPfRLpd9H7Rid56uNvjBR1HUTRQiORckgBO7dgfTGVimOO6HUQoP--1A/exec";
+  const tokenKey = "oo_quiz_token";
+  const STATE_POLL_MS = 1500; // 参加者が状態確認する間隔（1.5s）
+
+  // ====== 状態 ======
+  let QUESTIONS = [];
+  let QMAP = new Map(); // qno -> question obj
+  let lastRenderedQno = null;
+  let pollTimer = null;
+
+  // host採点用
+  let hostGroupInputs = new Map();
+
+  function $(id){ return document.getElementById(id); }
+
+  function getToken(){
+    let t = localStorage.getItem(tokenKey);
+    if(!t){ t = crypto.randomUUID(); localStorage.setItem(tokenKey,t); }
+    return t;
+  }
+  function getPass(){ return $("pass").value.trim(); }
+  function getSet(){ return $("setId").value; }
+  function getName(){ return $("name").value.trim(); }
+  function getAnon(){
+    const t = getToken().replace(/-/g,"").slice(0,4).toUpperCase();
+    return `参加者-${t}`;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function showOnly(which){
+    ["gate","quiz","board","host"].forEach(id => $(id).style.display = (id===which ? "block" : "none"));
+  }
+
+  function stopPoll(){
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  async function start(){
+    const pass = getPass();
+    const setId = getSet();
+    if(!pass){ alert("参加者パスワード入れて"); return; }
+
+    $("gateStatus").textContent = "問題取得中…";
+    const res = await fetch(`${API}?action=questions&set_id=${encodeURIComponent(setId)}&pass=${encodeURIComponent(pass)}`);
+    const data = await res.json();
+    if(!data.ok){ $("gateStatus").textContent="取得失敗"; alert("パスワード違う/取得失敗"); return; }
+
+    QUESTIONS = data.questions || [];
+    QMAP = new Map(QUESTIONS.map(q => [Number(q.qno), q]));
+    lastRenderedQno = null;
+
+    $("anonPill").textContent = getAnon();
+    $("gateStatus").textContent = "";
+
+    // ボードのQ選択肢も作る
+    buildBoardQnoOptions();
+
+    showOnly("quiz");
+    $("status").textContent = "司会が開始するまで待ってね（状態を確認中…）";
+
+    stopPoll();
+    pollTimer = setInterval(pollStateAndRender, STATE_POLL_MS);
+    await pollStateAndRender();
+  }
+
+  async function fetchState(){
+    const pass = getPass();
+    const setId = getSet();
+    const res = await fetch(`${API}?action=state&set_id=${encodeURIComponent(setId)}&pass=${encodeURIComponent(pass)}`);
+    return await res.json();
+  }
+
+  async function pollStateAndRender(){
+    const pass = getPass();
+    if(!pass) return;
+
+    const data = await fetchState();
+    $("status").textContent =`API=${API.slice(0,40)}... / set=${getSet()} / status=${data.state?.status} / q=${data.state?.current_qno}`;
+    if(!data.ok) return;
+
+    const st = data.state;
+    const cur = st.current_qno;
+    const status = st.status;
+
+    if(cur == null || status === "idle"){
+      $("progress").textContent = "";
+      $("qText").textContent = "司会の開始待ち";
+      $("choiceArea").style.display = "none";
+      $("textArea").style.display = "none";
+      $("submitBtn").disabled = true;
+      $("status").textContent = "司会が「開始（Q1開放）」を押すまで待ってね";
+      return;
+    }
+
+    $("progress").textContent = `現在：Q${cur} / 状態：${status}`;
+
+    if(status !== "open"){
+      // 締切中：問題は見せるが送信不可
+      renderQuestion(cur);
+      $("submitBtn").disabled = true;
+      $("status").textContent = "締切中（司会が再開するまで送信できません）";
+      return;
+    }
+
+    // open
+    renderQuestion(cur);
+    // そのQを既に送っていたら送信不可にする（簡易：localStorageで管理）
+    const sentKey = `sent_${getSet()}_${cur}`;
+    const already = localStorage.getItem(sentKey) === "1";
+    $("submitBtn").disabled = already;
+    $("status").textContent = already ? "送信済み。次の問題まで待ってね" : "回答して送信してね（次へは司会が管理）";
+  }
+
+  function renderQuestion(qno){
+    if(lastRenderedQno === Number(qno)) return;
+    lastRenderedQno = Number(qno);
+
+    const q = QMAP.get(Number(qno));
+    if(!q){
+      $("qText").textContent = "問題が見つからない（questionsを確認）";
+      $("choiceArea").style.display = "none";
+      $("textArea").style.display = "none";
+      return;
+    }
+
+    $("qText").textContent = q.question;
+
+    if(q.type === "choice"){
+      $("choiceArea").style.display = "block";
+      $("textArea").style.display = "none";
+      renderChoices(q.choices);
+    } else {
+      $("choiceArea").style.display = "none";
+      $("textArea").style.display = "block";
+      $("textAnswer").value = "";
+    }
+  }
+
+  function renderChoices(choicesStr){
+    const root = $("choices");
+    root.innerHTML = "";
+    const parts = (choicesStr || "").split("|").map(s => s.trim()).filter(Boolean);
+
+    parts.forEach((p, idx) => {
+      const key = p.includes(":") ? p.split(":")[0].trim() : String.fromCharCode(65 + idx);
+      const label = p;
+      const div = document.createElement("div");
+      div.className = "ansBox";
+      div.innerHTML = `
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="choice" value="${escapeHtml(key)}" ${idx===0 ? "checked" : ""}/>
+          <span>${escapeHtml(label)}</span>
+        </label>`;
+      root.appendChild(div);
+    });
+  }
+
+  async function submitAnswer(){
+    const pass = getPass();
+    const setId = getSet();
+    const name = getName();
+    const token = getToken();
+
+    // 送信対象のQは「今表示中のQ」＝ lastRenderedQno
+    const qno = lastRenderedQno;
+    const q = QMAP.get(Number(qno));
+    if(!q){ alert("問題が取れてない"); return; }
+
+    let answer;
+    if(q.type === "choice"){
+      const checked = document.querySelector('input[name="choice"]:checked');
+      answer = checked ? checked.value : "";
+      if(!answer){ alert("選んで"); return; }
+    } else {
+      answer = $("textAnswer").value.trim();
+      if(!answer){ alert("入力して"); return; }
+    }
+
+    $("status").textContent = "送信中…";
+    $("submitBtn").disabled = true;
+
+    // IMPORTANT: use text/plain to avoid CORS preflight issues
+    let res;
+    try {
+      res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "answer",
+          pass,
+          set_id: setId,
+          qno,
+          name,
+          token,
+          answer
+        })
+      });
+    } catch (e) {
+      $("status").textContent = "送信失敗（通信/CORS）";
+      $("submitBtn").disabled = false;
+      return;
+    }
+
+    const data = await res.json();
+    if(!data.ok){
+      if(data.error === "NOT_OPEN"){
+        $("status").textContent = "締切中（送信できません）";
+      } else if(data.error === "NOT_CURRENT_QUESTION"){
+        $("status").textContent = `進行が変わりました。いまはQ${data.current_qno}です。`;
+        lastRenderedQno = null; // force re-render
+        await pollStateAndRender();
+      } else {
+        $("status").textContent = `送信失敗：${data.error || "unknown"}`;
+      }
+      $("submitBtn").disabled = false;
+      return;
+    }
+
+    // mark as sent locally
+    localStorage.setItem(`sent_${setId}_${qno}`, "1");
+    $("status").textContent = "送信OK。次の問題まで待ってね（結果は後で発表）";
+    $("submitBtn").disabled = true;
+  }
+
+  function backToGate(){
+    stopPoll();
+    showOnly("gate");
+  }
+
+  // ===== Board (Q filter) =====
+  function buildBoardQnoOptions(){
+    const sel = $("boardQno");
+    if(!sel) return;
+    sel.innerHTML = "";
+    const qnos = Array.from(QMAP.keys()).sort((a,b)=>a-b);
+    // 1つ目は最新（stateのQ）に追従したいが、簡単に「全Q」も用意
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "（全Q）";
+    sel.appendChild(optAll);
+
+    qnos.forEach(n => {
+      const o = document.createElement("option");
+      o.value = String(n);
+      o.textContent = `Q${n}`;
+      sel.appendChild(o);
+    });
+  }
+
+  async function openBoard(){
+    stopPoll();
+    showOnly("board");
+    await refreshBoard();
+  }
+
+  async function refreshBoard(){
+    const pass = getPass();
+    const setId = getSet();
+    if(!pass){ alert("参加者パスワード入れて"); return; }
+
+    const qno = $("boardQno").value;
+    $("boardStatus").textContent = "取得中…";
+
+    const url = qno
+      ? `${API}?action=board&set_id=${encodeURIComponent(setId)}&qno=${encodeURIComponent(qno)}&pass=${encodeURIComponent(pass)}`
+      : `${API}?action=board&set_id=${encodeURIComponent(setId)}&pass=${encodeURIComponent(pass)}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.ok){ $("boardStatus").textContent="取得失敗"; return; }
+
+    const rows = (data.rows || []).slice(-200).reverse();
+    $("boardStatus").textContent = qno ? `Q${qno} の回答 ${rows.length}件` : `全回答 ${rows.length}件`;
+
+    $("boardList").innerHTML = rows.map(r => `
+      <div class="ansBox">
+        <div><b>${escapeHtml(r.anon)}</b> / Q${r.qno}</div>
+        <div class="muted">${escapeHtml(String(r.answer))}</div>
+      </div>
+    `).join("");
+  }
+
+  // ===== Host (progress + scoring) =====
+  async function openHost(){
+    stopPoll();
+    showOnly("host");
+    $("hostStatus").textContent = "";
+    $("hostGroups").innerHTML = "";
+    hostGroupInputs = new Map();
+    await hostRefreshState();
+  }
+
+  async function hostCall(action, payload){
+    const hostPass = $("hostPass").value.trim();
+    const setId = getSet();
+    if(!hostPass){ alert("司会パスを入力してください"); return null; }
+
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action,
+          host_pass: hostPass,
+          set_id: setId,
+          ...payload
+        })
+      });
+
+      const data = await res.json();
+      if(!data.ok){
+        alert(data.error || "司会操作エラー");
+        return null;
+      }
+
+      await hostRefreshState();
+      return data;
+    } catch(e){
+      alert("司会操作の通信に失敗しました（CORSブロック）。\nindex.html を保存して再読み込みしてください。");
+      return null;
+    }
+  }
+
+  async function hostRefreshState(){
+    const pass = getPass();
+    const setId = getSet();
+    if(!pass) return;
+    const res = await fetch(`${API}?action=state&set_id=${encodeURIComponent(setId)}&pass=${encodeURIComponent(pass)}`);
+    const data = await res.json();
+    if(!data.ok) return;
+    const st = data.state;
+    $("hostStateText").textContent = `状態：${st.status} / 現在Q：${st.current_qno ?? "-"} / 更新：${st.updated_at}`;
+  }
+
+  async function hostStart(){
+    // Q1 open
+    const data = await hostCall("host_set_state", { current_qno: 1, status: "open" });
+    if(data && data.ok) await hostRefreshState();
+  }
+  async function hostClose(){
+    const data = await hostCall("host_close", {});
+    if(data && data.ok) await hostRefreshState();
+  }
+  async function hostOpen(){
+    const data = await hostCall("host_open", {});
+    if(data && data.ok) await hostRefreshState();
+  }
+  async function hostNext(){
+    const data = await hostCall("host_next", {});
+    if(data && data.ok) await hostRefreshState();
+  }
+  async function hostPrev(){
+    const data = await hostCall("host_prev", {});
+    if(data && data.ok) await hostRefreshState();
+  }
+  async function hostReset(){
+    const data = await hostCall("host_reset", {});
+    if(data && data.ok) await hostRefreshState();
+  }
+
+  // ---- scoring by answer text (same as before) ----
+  async function hostLoad(){
+    const pass = getPass();
+    const setId = getSet();
+    const qno = Number($("hostQno").value);
+    if(!pass){ alert("参加者パスが必要"); return; }
+    if(!qno){ alert("Q番号入れて"); return; }
+
+    $("hostStatus").textContent = "読み込み中…";
+    const res = await fetch(`${API}?action=board&set_id=${encodeURIComponent(setId)}&qno=${encodeURIComponent(qno)}&pass=${encodeURIComponent(pass)}`);
+    const data = await res.json();
+    if(!data.ok){ $("hostStatus").textContent="読み込み失敗"; return; }
+
+    const rows = data.rows || [];
+    const groups = new Map(); // answer -> {count, anons[]}
+    rows.forEach(r => {
+      const ans = String(r.answer || "");
+      if(!groups.has(ans)) groups.set(ans, { count:0, anons: [] });
+      const g = groups.get(ans);
+      g.count++;
+      g.anons.push(r.anon);
+    });
+
+    const sorted = Array.from(groups.entries()).sort((a,b)=> b[1].count - a[1].count);
+    hostGroupInputs = new Map();
+
+    $("hostGroups").innerHTML = sorted.map(([ans, g], idx) => {
+      const id = `score_${idx}`;
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if(el) hostGroupInputs.set(ans, el);
+      }, 0);
+
+      return `
+        <div class="group">
+          <div class="muted">件数: ${g.count}</div>
+          <div class="ansBox"><b>回答</b><div>${escapeHtml(ans)}</div></div>
+          <div class="row">
+            <div>
+              <label>点数（例: 5 / 0 / -3）</label>
+              <input id="${id}" placeholder="点数" inputmode="numeric" />
+            </div>
+          </div>
+          <div class="muted">匿名: ${g.anons.map(a=>escapeHtml(a)).join(", ")}</div>
+        </div>
+      `;
+    }).join("");
+
+    $("hostStatus").textContent = `Q${qno} の回答を ${groups.size} パターン読み込みました。点数→保存→反映。`;
+  }
+
+  async function hostSaveScores(){
+    const hostPass = $("hostPass").value.trim();
+    const setId = getSet();
+    const qno = Number($("hostQno").value);
+    if(!hostPass){ alert("司会パスを入れて"); return; }
+    if(!qno){ alert("Q番号入れて"); return; }
+
+    const items = [];
+    hostGroupInputs.forEach((inputEl, ans) => {
+      const raw = String(inputEl.value || "").trim();
+      if(raw === "") return;
+      const score = Number(raw);
+      if(Number.isNaN(score)) return;
+      items.push({ answer: ans, score });
+    });
+    if(items.length === 0){ alert("点数が入ってるものがない"); return; }
+
+    $("hostStatus").textContent = "保存中…";
+    const res = await fetch(API, {
+      method:"POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "score_by_answer",
+        host_pass: hostPass,
+        set_id: setId,
+        qno,
+        items
+      })
+    });
+    const data = await res.json();
+    if(!data.ok){ $("hostStatus").textContent="保存失敗"; return; }
+    $("hostStatus").textContent = `保存OK：${data.saved} 件。次に反映を押してね。`;
+  }
+
+  async function hostApplyScores(){
+    const hostPass = $("hostPass").value.trim();
+    const setId = getSet();
+    const qno = Number($("hostQno").value);
+    if(!hostPass){ alert("司会パスを入れて"); return; }
+    if(!qno){ alert("Q番号入れて"); return; }
+
+    $("hostStatus").textContent = "反映中…";
+    const res = await fetch(API, {
+      method:"POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "apply_scores",
+        host_pass: hostPass,
+        set_id: setId,
+        qno
+      })
+    });
+    const data = await res.json();
+    if(!data.ok){ $("hostStatus").textContent="反映失敗"; return; }
+    $("hostStatus").textContent = `反映OK：responses を ${data.updated} 行更新しました。`;
+  }
+</script>
+</body>
+</html>
