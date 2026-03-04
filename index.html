@@ -4,17 +4,183 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>〇〇王 クイズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, sans-serif; padding: 16px; max-width: 900px; margin: 0 auto; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin: 12px 0; }
-    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ccc; background:#fff; }
-    input, select { padding: 10px; border-radius: 10px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .row > * { flex: 1 1 180px; }
-    .muted { color: #666; font-size: 12px; }
-    .pill { display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #ddd; border-radius:999px; }
-    .ansBox { padding:8px; border:1px solid #eee; border-radius:10px; margin:8px 0; }
-    .group { border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
+    :root {
+      --bg: #f5f0e8;
+      --surface: #fff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #dbeafe;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 16px 48px;
+      max-width: 920px;
+      margin: 0 auto;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 0 0 24px;
+      color: var(--primary);
+      letter-spacing: .02em;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 16px;
+      line-height: 1.4;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+      transition: box-shadow .2s ease;
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .card.card--dashed { border-style: dashed; border-color: #c4b5a8; background: #fefcf9; }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    input, select {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      width: 100%;
+      font-family: inherit;
+      font-size: 1rem;
+      background: var(--surface);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+    input::placeholder { color: #9ca3af; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .row > * { flex: 1 1 180px; min-width: 0; }
+    .row--center { align-items: center; }
+    .muted {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 999px;
+    }
+    .ansBox {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin: 8px 0;
+      background: #fafafa;
+    }
+    .group {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin: 12px 0;
+      background: var(--surface);
+    }
+    button {
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s, transform .05s, box-shadow .2s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 1px 2px rgba(37,99,235,.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      box-shadow: 0 2px 8px rgba(37,99,235,.35);
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #f9fafb;
+      border-color: #d1d5db;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .card .row + .row { margin-top: 16px; }
+    .card .row + div[style*="margin-top"] { margin-top: 16px; }
+    #qText {
+      font-size: 1.15rem;
+      padding: 16px 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 16px;
+    }
+    #choices .ansBox label {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    #choices .ansBox label:hover { color: var(--primary); }
+    #choices .ansBox input[type="radio"] {
+      width: auto;
+      accent-color: var(--primary);
+    }
+    #boardList .ansBox { transition: opacity .2s; }
+    #boardList .ansBox:hover { background: #f3f4f6; }
   </style>
 </head>
 <body>
@@ -35,23 +201,23 @@
       </div>
     </div>
 
-    <div style="margin-top:10px;">
+    <div style="margin-top:16px;">
       <label>名前（スプシ記録用）</label>
       <input id="name" placeholder="ニックネームOK" />
       <div class="muted">※画面表示は匿名（参加者-XXXX）</div>
     </div>
 
-    <div style="margin-top:10px;" class="row">
-      <button onclick="start()">参加者として開始</button>
-      <button onclick="openBoard()">匿名ボード</button>
-      <button onclick="openHost()">司会（進行/採点）</button>
+    <div style="margin-top:20px;" class="row">
+      <button class="btn-primary" onclick="start()">参加者として開始</button>
+      <button class="btn-secondary" onclick="openBoard()">匿名ボード</button>
+      <button class="btn-secondary" onclick="openHost()">司会（進行/採点）</button>
     </div>
 
     <div class="muted" id="gateStatus"></div>
   </div>
 
   <div class="card" id="quiz" style="display:none;">
-    <div class="row" style="align-items:center;">
+    <div class="row row--center">
       <div class="muted" id="progress"></div>
       <div style="text-align:right;"><span class="pill" id="anonPill"></span></div>
     </div>
@@ -67,23 +233,23 @@
       <input id="textAnswer" placeholder="例：優しいところ" />
     </div>
 
-    <div style="margin-top:12px;" class="row">
-      <button id="submitBtn" onclick="submitAnswer()">送信</button>
-      <button onclick="openBoard()">匿名ボード</button>
+    <div style="margin-top:16px;" class="row">
+      <button class="btn-primary" id="submitBtn" onclick="submitAnswer()">送信</button>
+      <button class="btn-secondary" onclick="openBoard()">匿名ボード</button>
     </div>
 
     <div class="muted" id="status"></div>
   </div>
 
   <div class="card" id="board" style="display:none;">
-    <div class="row" style="align-items:center;">
+    <div class="row row--center">
       <h2 style="margin:0;">匿名ボード（Q別）</h2>
       <div style="text-align:right;">
-        <button onclick="backToGate()">戻る</button>
+        <button class="btn-secondary" onclick="backToGate()">戻る</button>
       </div>
     </div>
 
-    <div class="row" style="margin-top:8px;">
+    <div class="row" style="margin-top:16px;">
       <div>
         <label>Q番号</label>
         <select id="boardQno"></select>
@@ -91,7 +257,7 @@
       </div>
       <div>
         <label>&nbsp;</label>
-        <button onclick="refreshBoard()">更新</button>
+        <button class="btn-primary" onclick="refreshBoard()">更新</button>
       </div>
     </div>
 
@@ -100,10 +266,10 @@
   </div>
 
   <div class="card" id="host" style="display:none;">
-    <div class="row" style="align-items:center;">
+    <div class="row row--center">
       <h2 style="margin:0;">司会：進行（同期） + 採点</h2>
       <div style="text-align:right;">
-        <button onclick="backToGate()">戻る</button>
+        <button class="btn-secondary" onclick="backToGate()">戻る</button>
       </div>
     </div>
 
@@ -120,25 +286,25 @@
       </div>
     </div>
 
-    <div class="card" style="border-style:dashed;">
-      <h3 style="margin:0 0 8px 0;">進行（全員を同じQに揃える）</h3>
+    <div class="card card--dashed">
+      <h3>進行（全員を同じQに揃える）</h3>
       <div class="row">
-        <button onclick="hostStart()">開始（Q1開放）</button>
-        <button onclick="hostClose()">締切（回答停止）</button>
-        <button onclick="hostOpen()">再開（回答OK）</button>
-        <button onclick="hostPrev()">前へ</button>
-        <button onclick="hostNext()">次へ（開放）</button>
-        <button onclick="hostReset()">リセット</button>
+        <button class="btn-primary" onclick="hostStart()">開始（Q1開放）</button>
+        <button class="btn-secondary" onclick="hostClose()">締切（回答停止）</button>
+        <button class="btn-secondary" onclick="hostOpen()">再開（回答OK）</button>
+        <button class="btn-secondary" onclick="hostPrev()">前へ</button>
+        <button class="btn-accent" onclick="hostNext()">次へ（開放）</button>
+        <button class="btn-secondary" onclick="hostReset()">リセット</button>
       </div>
       <div class="muted" id="hostStateText"></div>
     </div>
 
-    <div class="card" style="border-style:dashed;">
-      <h3 style="margin:0 0 8px 0;">自由入力の採点（回答文ごと）</h3>
+    <div class="card card--dashed">
+      <h3>自由入力の採点（回答文ごと）</h3>
       <div class="row">
-        <button onclick="hostLoad()">回答を読み込む</button>
-        <button onclick="hostSaveScores()">点数を保存</button>
-        <button onclick="hostApplyScores()">responsesへ反映</button>
+        <button class="btn-primary" onclick="hostLoad()">回答を読み込む</button>
+        <button class="btn-accent" onclick="hostSaveScores()">点数を保存</button>
+        <button class="btn-secondary" onclick="hostApplyScores()">responsesへ反映</button>
       </div>
       <div class="muted" id="hostStatus"></div>
       <div id="hostGroups" style="margin-top:10px;"></div>
